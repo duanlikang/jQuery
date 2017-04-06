@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>进行Jquery的常用测试</title>
+</head>
+
+<body>
+    <script type="text/javascript">
+    (function() {
+        //驼峰转换
+        var
+            oldStr, newStr;
+        oldStr = "background-image-a";
+        newStr = oldStr.replace(/-([\w])/gi, function(all, letter) {
+            return letter.toUpperCase();
+        });
+
+        console.log(newStr);
+
+        //class List 提取
+        var
+            classStr = "aaa bbb ccc";
+
+        /**
+         * 过滤函数，classback是过滤函数，返回true
+         * @param  {[type]}   classList [description]
+         * @param  {Function} callback  [description]
+         * @return {[type]}             [description]
+         */
+        function filterClass(classList, callback) {
+            var
+                tempClassList = [],
+                newClasList;
+            if (typeof classList === 'string') {
+                newClassList = (" " + classStr + " ").split(/\s+/).map(function(str, index, arr) {
+                    return str.trim();
+                }, this);;
+            } else if (typeof classList === 'object' && Object.prototype.toString.call(classList) === '[object Array]') {
+                newClassList = classList;
+            } else {
+                return false;
+            }
+
+            newClassList.forEach(function(currentValue, index, arr) {
+                if (callback && callback.call(this, currentValue)) {
+                    tempClassList.push(currentValue);
+                    return;
+                }
+                if (currentValue) {
+                    tempClassList.push(currentValue);
+                }
+            });
+            return tempClassList;
+        }
+        console.log(filterClass(["132", ""], function(currentValue) {
+            if (currentValue)
+                return true;
+        }));
+    })(window);
+
+    (function() {
+        //发布订阅模式
+        var mediator = (function() {
+
+            var
+                subscribe = function(channel, fn) {
+                    console.log('subscribe');
+                    if (!mediator.channels[channel])
+                        mediator.channels[channel] = [];
+                    mediator.channels[channel].push({
+                        context: this,
+                        callback: fn,
+                    });
+                    return this;
+                },
+                publish = function(channel) {
+                    console.log('publish');
+                    if (!mediator.channels[channel])
+                        return false;
+                    var args = Array.prototype.slice.call(arguments, 1);
+                    for (var i = 0, len = mediator.channels[channel].length; i < len; i++) {
+                        var subscription = mediator.channels[channel][i];
+                        subscription.callback.apply(subscription.context, args);
+                    }
+                    return this;
+                };
+
+            return {
+                channels: [],
+                publish: publish,
+                subscribe: subscribe,
+                installTo: function(obj) {
+                    obj.subscribe = subscribe;
+                    obj.publish = publish;
+                }
+            }
+
+        }());
+
+        //test
+        mediator.name = "tim";
+        mediator.subscribe('nameChange', function(arg) {
+            console.log(this.name);
+            this.name = arg;
+            console.log(this.name);
+        });
+        mediator.publish('nameChange', '123');
+
+        //Pub/sub via third party mediator
+
+        var obj = {
+            name: 'sam'
+        };
+        mediator.installTo(obj);
+        obj.subscribe('nameChange', function(arg) {
+            console.log(this.name);
+            this.name = arg;
+            console.log(this.name);
+        });
+
+        obj.publish('nameChange', 'john'); //sam, john
+    }());
+    </script>
+</body>
+
+</html>
